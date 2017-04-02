@@ -1,0 +1,9 @@
+docker service create --constraint 'node.role == worker' --name wtdwtf-science-communityserver --network wtdwtf-science --mount 'type=bind,source=/mnt/sda1/backup,destination=/var/backup,ro' -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=AnInsecure!Passw0rd' microsoft/mssql-server-linux
+docker service create --constraint 'node.role == worker' --name wtdwtf-science-discourse --network wtdwtf-science --mount 'type=bind,source=/mnt/sda1/backup,destination=/var/backup,ro' postgres
+docker service create --constraint 'node.role == worker' --name wtdwtf-science-nodebb --network wtdwtf-science --mount 'type=bind,source=/mnt/sda1/backup,destination=/var/backup,ro' mongo
+docker exec wtdwtf-science-communityserver.1.`docker service ps wtdwtf-science-communityserver -q` /opt/mssql-tools/bin/sqlcmd -H localhost -U SA -P 'AnInsecure!Passw0rd' -Q 'USE master RESTORE DATABASE [TheDailyWtf] FROM DISK=N''/var/backup/communityserver.bak'' WITH FILE = 1, MOVE N''CommunityServer'' TO N''/var/opt/mssql/data/CommunityServer.mdf'', MOVE N''CommunityServer_log'' TO N''/var/opt/mssql/data/CommunityServer_log.ldf'', NOUNLOAD, REPLACE, STATS = 1'
+docker exec wtdwtf-science-discourse.1.`docker service ps wtdwtf-science-discourse -q` psql -U postgres -f /var/backup/discourse.sql
+docker exec wtdwtf-science-nodebb.1.`docker service ps wtdwtf-science-nodebb -q` mongorestore --drop /var/backup/nodebb/
+docker service create --constraint 'node.role == worker' --name wtdwtf-science-output --network wtdwtf-science postgres
+docker service create --constraint 'node.role == worker' --name wtdwtf-science --network wtdwtf-science benlubar/wtdwtf-science
+docker service create --constraint 'node.role == worker' --name wtdwtf-science-registry --network wtdwtf-science -p 5000:5000 registry:2
