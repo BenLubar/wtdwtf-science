@@ -7,5 +7,7 @@ type Category interface {
 	Slug() string
 	Description() string
 	Order() int
+	FgColor() [3]uint8
+	BgColor() [3]uint8
 	Imported() map[Forum]int64
 }

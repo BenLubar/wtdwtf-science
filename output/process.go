@@ -3,6 +3,7 @@ package output // import "github.com/BenLubar/wtdwtf-science/output"
 import (
 	"context"
 	"database/sql"
+	"log"
 	"sync"
 
 	"github.com/BenLubar/wtdwtf-science/forum"
@@ -68,30 +69,60 @@ func getForumID(ctx context.Context, f forum.Forum) (int64, error) {
 }
 
 func process(ctx context.Context, f forum.Forum) error {
-	for u := range f.Users(ctx) {
-		if err := insertUser(ctx, f, u); err != nil {
-			return errors.Wrapf(err, "add user %q from %q", u.Name(), f.Name())
+	var count int64
+	inc := func(name string) {
+		count++
+		if count%1000 == 0 {
+			log.Printf("Added %d %s for %q", count, name, f.Name())
 		}
 	}
+	for u := range f.Users(ctx) {
+		if err := insertUser(ctx, f, u); err != nil {
+			return errors.Wrapf(err, "add user %q from %q", u.Login(), f.Name())
+		}
+		inc("users")
+	}
+	log.Printf("Added %d users for %q", count, f.Name())
+	count = 0
+	for g := range f.Groups(ctx) {
+		if err := insertGroup(ctx, f, g); err != nil {
+			return errors.Wrapf(err, "add group %q from %q", g.Name(), f.Name())
+		}
+		inc("groups")
+	}
+	log.Printf("Added %d groups for %q", count, f.Name())
+	count = 0
 	for c := range f.Categories(ctx) {
 		if err := insertCategory(ctx, f, c); err != nil {
 			return errors.Wrapf(err, "add category %q from %q", c.Name(), f.Name())
 		}
+		inc("categories")
 	}
+	log.Printf("Added %d categories for %q", count, f.Name())
+	count = 0
 	for t := range f.Topics(ctx) {
 		if err := insertTopic(ctx, f, t); err != nil {
 			return errors.Wrapf(err, "add topic %d from %q", t.ID(), f.Name())
 		}
+		inc("topics")
 	}
+	log.Printf("Added %d topics for %q", count, f.Name())
+	count = 0
 	for p := range f.Posts(ctx) {
 		if err := insertPost(ctx, f, p); err != nil {
 			return errors.Wrapf(err, "add post %d from %q", p.ID(), f.Name())
 		}
+		inc("posts")
 	}
+	log.Printf("Added %d posts for %q", count, f.Name())
+	count = 0
 	for v := range f.Votes(ctx) {
 		if err := insertVote(ctx, f, v); err != nil {
-			return errors.Wrapf(err, "add vote %d -> %d from %q", v.UserID(), v.PostID(), f.Name())
+			return errors.Wrapf(err, "add vote %d -> %d from %q", v.User(), v.Post(), f.Name())
 		}
+		inc("votes")
 	}
+	log.Printf("Added %d votes for %q", count, f.Name())
+	count = 0
 	return f.Err()
 }

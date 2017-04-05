@@ -7,14 +7,13 @@ import (
 	"os"
 	"os/signal"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/BenLubar/wtdwtf-science/discourse"
 	"github.com/BenLubar/wtdwtf-science/forum"
 	"github.com/BenLubar/wtdwtf-science/nodebb"
 	"github.com/BenLubar/wtdwtf-science/output"
 	"github.com/BenLubar/wtdwtf-science/telligent"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 var dialers = [...]forum.DialFunc{
@@ -77,12 +76,12 @@ func main() {
 	}()
 
 	if err := initForums(ctx); err != nil {
-		log.Println("Database init error:", err)
+		log.Printf("Database init error: %+v", err)
 		return
 	}
 
 	if err := output.Wait(); err != nil {
-		log.Println("Processing error:", err)
+		log.Printf("Processing error: %+v", err)
 		return
 	}
 

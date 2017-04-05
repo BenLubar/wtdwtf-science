@@ -6,11 +6,10 @@ import (
 	"flag"
 	"log"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/BenLubar/wtdwtf-science/forum"
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 var dataSourceName = flag.String("output", "host=wtdwtf-science-output user=postgres dbname=postgres sslmode=disable", "output data source name")

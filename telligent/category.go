@@ -30,17 +30,17 @@ union all
 select s.SectionID, coalesce(-s.GroupID, 0), s.Name, s.Description, s.SortOrder from cs_Sections s
 inner join cs_Groups g on s.GroupID = g.GroupID
 where g.ApplicationType = 0`)
-	if f.Check(err) {
+	if f.Check(err, "query categories") {
 		return
 	}
 
 	defer func() {
-		f.Check(rows.Close())
+		f.Check(rows.Close(), "close category query")
 	}()
 
 	for rows.Next() {
 		var c Category
-		if f.Check(rows.Scan(&c.id, &c.parent, &c.name, &c.description, &c.order)) {
+		if f.Check(rows.Scan(&c.id, &c.parent, &c.name, &c.description, &c.order), "scan category") {
 			return
 		}
 		select {
@@ -73,6 +73,18 @@ func (c *Category) Description() string {
 
 func (c *Category) Order() int {
 	return c.order
+}
+
+func (c *Category) FgColor() [3]uint8 {
+	return [3]uint8{0xff, 0xff, 0xff}
+}
+
+func (c *Category) BgColor() [3]uint8 {
+	return [3]uint8{0x00, 0x00, 0x00}
+}
+
+func (c *Category) Link() string {
+	return ""
 }
 
 func (c *Category) Imported() map[forum.Forum]int64 {

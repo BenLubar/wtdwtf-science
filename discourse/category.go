@@ -14,6 +14,9 @@ type Category struct {
 	slug        string
 	description string
 	order       int
+	fgColor     [3]uint8
+	bgColor     [3]uint8
+	link        string
 	imported    sql.NullInt64
 	forum       *Forum
 }
@@ -29,20 +32,23 @@ func (f *Forum) Categories(ctx context.Context) <-chan forum.Category {
 func (f *Forum) categories(ctx context.Context, ch chan<- forum.Category) {
 	defer close(ch)
 
-	rows, err := f.db.QueryContext(ctx, `select c.id, coalesce(c.parent_category_id, 0), c.name, c.slug, c.description, c.position, ccf.value from categories c left outer join category_custom_fields ccf on ccf.category_id = c.id where ccf.name = 'import_id';`)
-	if f.Check(err) {
+	rows, err := f.db.QueryContext(ctx, `select c.id, coalesce(c.parent_category_id, 0), c.name, c.slug, c.description, c.position, decode(coalesce(c.text_color, 'ffffff'), 'hex'), decode(coalesce(c.color, '000000'), 'hex'), ccf.value from categories c left outer join category_custom_fields ccf on ccf.category_id = c.id and ccf.name = 'import_id';`)
+	if f.Check(err, "query categories") {
 		return
 	}
 
 	defer func() {
-		f.Check(rows.Close())
+		f.Check(rows.Close(), "close category query")
 	}()
 
 	for rows.Next() {
 		var c Category
-		if f.Check(rows.Scan(&c.id, &c.parent, &c.name, &c.slug, &c.description, &c.order, &c.imported)) {
+		var fgColor, bgColor []byte
+		if f.Check(rows.Scan(&c.id, &c.parent, &c.name, &c.slug, &c.description, &c.order, &fgColor, &bgColor, &c.imported), "scan category") {
 			return
 		}
+		copy(c.fgColor[:], fgColor)
+		copy(c.bgColor[:], bgColor)
 		c.forum = f
 		select {
 		case ch <- &c:
@@ -74,6 +80,18 @@ func (c *Category) Description() string {
 
 func (c *Category) Order() int {
 	return c.order
+}
+
+func (c *Category) FgColor() [3]uint8 {
+	return c.fgColor
+}
+
+func (c *Category) BgColor() [3]uint8 {
+	return c.bgColor
+}
+
+func (c *Category) Link() string {
+	return c.link
 }
 
 func (c *Category) Imported() map[forum.Forum]int64 {

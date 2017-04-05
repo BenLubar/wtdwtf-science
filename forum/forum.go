@@ -2,7 +2,10 @@ package forum // import "github.com/BenLubar/wtdwtf-science/forum"
 
 import (
 	"context"
+	"fmt"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 type DialFunc func(context.Context) (Forum, error)
@@ -15,11 +18,11 @@ type Shared struct {
 
 func (s *Shared) Name() string { return s.ID }
 func (s *Shared) Err() error   { return s.err }
-func (s *Shared) Check(err error) bool {
+func (s *Shared) Check(err error, message string, args ...interface{}) bool {
 	if err != nil {
 		s.errLock.Lock()
 		if s.err == nil {
-			s.err = err
+			s.err = errors.Wrapf(err, "%s %s", s.ID, fmt.Sprintf(message, args...))
 		}
 		s.errLock.Unlock()
 		return true
